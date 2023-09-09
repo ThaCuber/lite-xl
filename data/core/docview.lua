@@ -113,9 +113,9 @@ end
 function DocView:get_scrollable_size()
   if not config.scroll_past_end then
     local _, _, _, h_scroll = self.h_scrollbar:get_track_rect()
-    return self:get_line_height() * (#self.doc.lines) + style.padding.y * 2 + h_scroll
+    return self:get_line_height() * (#self.doc.virtual_lines) + style.padding.y * 2 + h_scroll
   end
-  return self:get_line_height() * (#self.doc.lines - 1) + self.size.y
+  return self:get_line_height() * (#self.doc.virtual_lines - 1) + self.size.y
 end
 
 function DocView:get_h_scrollable_size()
@@ -135,9 +135,8 @@ end
 
 function DocView:get_gutter_width()
   local padding = style.padding.x * 2
-  return self:get_font():get_width(#self.doc.lines) + padding, padding
+  return self:get_font():get_width(#self.doc.virtual_lines) + padding, padding
 end
-
 
 function DocView:get_line_screen_position(line, col)
   local x, y = self:get_content_offset()
@@ -162,7 +161,7 @@ function DocView:get_visible_line_range()
   local x, y, x2, y2 = self:get_content_bounds()
   local lh = self:get_line_height()
   local minline = math.max(1, math.floor((y - style.padding.y) / lh) + 1)
-  local maxline = math.min(#self.doc.lines, math.floor((y2 - style.padding.y) / lh) + 1)
+  local maxline = math.min(#self.doc.virtual_lines, math.floor((y2 - style.padding.y) / lh) + 1)
   return minline, maxline
 end
 
@@ -199,7 +198,7 @@ end
 
 
 function DocView:get_x_offset_col(line, x)
-  local line_text = self.doc.lines[line]
+  local line_text = self.doc.virtual_lines[line]
 
   local xoffset, last_i, i = 0, 1, 1
   local default_font = self:get_font()
@@ -234,7 +233,7 @@ end
 function DocView:resolve_screen_position(x, y)
   local ox, oy = self:get_line_screen_position(1)
   local line = math.floor((y - oy) / self:get_line_height()) + 1
-  line = common.clamp(line, 1, #self.doc.lines)
+  line = common.clamp(line, 1, #self.doc.virtual_lines)
   local col = self:get_x_offset_col(line, x - ox)
   return line, col
 end
@@ -301,7 +300,7 @@ function DocView:on_mouse_moved(x, y, ...)
       if l1 > l2 then l1, l2 = l2, l1 end
       self.doc.selections = { }
       for i = l1, l2 do
-        self.doc:set_selections(i - l1 + 1, i, math.min(c1, #self.doc.lines[i]), i, math.min(c2, #self.doc.lines[i]))
+        self.doc:set_selections(i - l1 + 1, i, math.min(c1, #self.doc.virtual_lines[i]), i, math.min(c2, #self.doc.virtual_lines[i]))
       end
     else
       if snap_type then
@@ -339,15 +338,15 @@ function DocView:on_mouse_pressed(button, x, y, clicks)
   if keymap.modkeys["shift"] then
     local sline, scol, sline2, scol2 = self.doc:get_selection(true)
     if line > sline then
-      self.doc:set_selection(sline, 1, line,  #self.doc.lines[line])
+      self.doc:set_selection(sline, 1, line,  #self.doc.virtual_lines[line])
     else
-      self.doc:set_selection(line, 1, sline2, #self.doc.lines[sline2])
+      self.doc:set_selection(line, 1, sline2, #self.doc.virtual_lines[sline2])
     end
   else
     if clicks == 1 then
       self.doc:set_selection(line, 1, line, 1)
     elseif clicks == 2 then
-      self.doc:set_selection(line, 1, line, #self.doc.lines[line])
+      self.doc:set_selection(line, 1, line, #self.doc.virtual_lines[line])
     end
   end
   return true
@@ -491,7 +490,8 @@ function DocView:draw_line_body(line, x, y)
   local lh = self:get_line_height()
   for lidx, line1, col1, line2, col2 in self.doc:get_selections(true) do
     if line >= line1 and line <= line2 then
-      local text = self.doc.lines[line]
+      print("lolmao")
+      local text = self.doc.virtual_lines[line]
       if line1 ~= line then col1 = 1 end
       if line2 ~= line then col2 = #text + 1 end
       local x1 = x + self:get_col_x_offset(line, col1)

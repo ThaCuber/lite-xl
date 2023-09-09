@@ -25,11 +25,11 @@ function Highlighter:start()
       for i = self.first_invalid_line, max do
         local state = (i > 1) and self.lines[i - 1].state
         local line = self.lines[i]
-        if line and line.resume and (line.init_state ~= state or line.text ~= self.doc.lines[i]) then
+        if line and line.resume and (line.init_state ~= state or line.text ~= self.doc.virtual_lines[i]) then
           -- Reset the progress if no longer valid
           line.resume = nil
         end
-        if not (line and line.init_state == state and line.text == self.doc.lines[i] and not line.resume) then
+        if not (line and line.init_state == state and line.text == self.doc.virtual_lines[i] and not line.resume) then
           retokenized_from = retokenized_from or i
           self.lines[i] = self:tokenize_line(i, state, line and line.resume)
           if self.lines[i].resume then
@@ -78,7 +78,7 @@ end
 
 function Highlighter:invalidate(idx)
   self.first_invalid_line = math.min(self.first_invalid_line, idx)
-  set_max_wanted_lines(self, math.min(self.max_wanted_line, #self.doc.lines))
+  set_max_wanted_lines(self, math.min(self.max_wanted_line, #self.doc.virtual_lines))
 end
 
 function Highlighter:insert_notify(line, n)
@@ -103,7 +103,7 @@ end
 function Highlighter:tokenize_line(idx, state, resume)
   local res = {}
   res.init_state = state
-  res.text = self.doc.lines[idx]
+  res.text = self.doc.virtual_lines[idx]
   res.tokens, res.state, res.resume = tokenizer.tokenize(self.doc.syntax, res.text, state, resume)
   return res
 end
@@ -111,7 +111,7 @@ end
 
 function Highlighter:get_line(idx)
   local line = self.lines[idx]
-  if not line or line.text ~= self.doc.lines[idx] then
+  if not line or line.text ~= self.doc.virtual_lines[idx] then
     local prev = self.lines[idx - 1]
     line = self:tokenize_line(idx, prev and prev.state)
     self.lines[idx] = line

@@ -32,6 +32,7 @@ end
 
 function Doc:reset()
   self.lines = { "\n" }
+  self.virtual_lines = { "\n" }
   self.selections = { 1, 1, 1, 1 }
   self.last_selection = 1
   self.undo_stack = { idx = 1 }
@@ -406,6 +407,7 @@ function Doc:raw_insert(line, col, text, undo_stack, time)
 
   -- splice lines into line array
   common.splice(self.lines, line, 1, lines)
+  common.splice(self.virtual_lines, line, 1, lines)
 
   -- keep cursors where they should be
   for idx, cline1, ccol1, cline2, ccol2 in self:get_selections(true, true) do
@@ -441,6 +443,7 @@ function Doc:raw_remove(line1, col1, line2, col2, undo_stack, time)
 
   -- splice line into line array
   common.splice(self.lines, line1, line_removal + 1, { before .. after })
+  common.splice(self.virtual_lines, line1, line_removal + 1, { before .. after })
 
   local merge = false
 
@@ -662,6 +665,11 @@ end
 
 -- For plugins to add custom actions of document change
 function Doc:on_text_change(type)
+  local vline = #self.virtual_lines
+  local col = 5
+  if self.virtual_lines[vline] and not self.virtual_lines[vline]:find "lolmao" then
+    self.virtual_lines[vline] = self.virtual_lines[vline]:sub(1,col) .. " lolmao " .. self.virtual_lines[vline]:sub(col+1)
+  end
 end
 
 -- For plugins to get notified when a document is closed
